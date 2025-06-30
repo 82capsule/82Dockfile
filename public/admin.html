@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font : Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <title>82Capsule 예약 조회 매크로 (관리자)</title>
+
+  <style>
+    body{font-family:'Inter',sans-serif;}
+
+    /* ───── 사이드바 공통 스타일 ───── */
+    .gradient-text{background:linear-gradient(90deg,#8b5cf6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+    /* ───── admin 테이블/모달 기존 스타일 ───── */
+    #controls label{margin-right:10px;}
+    #controls input,#controls button{padding:6px;margin:4px;}
+    table{width:100%;border-collapse:collapse;margin-top:10px;}
+    th,td{border:1px solid #ccc;padding:4px 8px;text-align:center;}
+    th{background:#f0f0f0;}
+
+    /* Loading modal */
+    #loadingModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;}
+    #loadingModal .modal-content{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.3);text-align:center;}
+    #loadingModal .spinner{margin:16px auto;width:40px;height:40px;border:4px solid #ccc;border-top-color:#333;border-radius:50%;animation:spin 1s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+  </style>
+</head>
+
+<body class="flex h-screen overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50">
+
+  <!-- ───────── 사이드바 ───────── -->
+  <aside class="w-64 bg-gradient-to-b from-purple-700 to-indigo-700 text-white flex-shrink-0 shadow-xl">
+    <div class="p-6 text-2xl font-bold gradient-text">관리자 카테고리</div>
+    <nav class="px-4">
+      <ul>
+        <li>
+          <button id="accordionBtn" class="w-full text-left py-3 flex justify-between items-center hover:bg-purple-600 rounded-lg px-2 transition">
+            <span class="font-semibold">메뉴 펼치기</span>
+            <i class="fas fa-chevron-down transition-transform duration-200"></i>
+          </button>
+          <ul id="accordionList" class="mt-2 ml-4 space-y-1 hidden">
+            <li><a href="index.html"            class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">대시보드</a></li>
+            <li><a href="host-reservation.html" class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">호스트 예약 직접 등록</a></li>
+            <li><a href="guest-search.html"    class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 검색</a></li>
+            <li><a href="guest_sheet.html"     class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 예약 리스트</a></li>
+            <li><a href="first_page.html"      class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 선택</a></li>
+            <li><a href="admin.html"           class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">객실 정보 업데이트</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ───────── 메인 컨텐트 ───────── -->
+  <main class="flex-1 p-8 overflow-auto">
+
+    <h1 class="text-2xl font-bold mb-4">예약 조회 (관리자)</h1>
+
+    <div id="controls" class="mb-6">
+      <label>체크인:
+        <input type="date" id="fromDate" class="border rounded px-2 py-1">
+      </label>
+      <label>체크아웃:
+        <input type="date" id="toDate" class="border rounded px-2 py-1">
+      </label>
+      <button id="btnSearch" class="bg-purple-600 hover:bg-purple-700 text-white rounded px-4 py-1">조회</button>
+      <button id="btnUpload" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded px-4 py-1">전송</button>
+      <label class="ml-2"><input type="checkbox" id="autoUpload"> 자동 전송 (서버 cron)</label>
+      <button id="btnAutoCI" class="bg-rose-600 hover:bg-rose-700 text-white rounded px-4 py-1 ml-2">자동 체크인 마감 진행</button>
+    </div>
+
+    <div id="results">결과가 여기에 표시됩니다.</div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal">
+      <div class="modal-content">
+        <div>조회 중입니다. 잠시만 기다려주세요.</div>
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+  </main>
+
+<!-- ───────── 스크립트 ───────── -->
+<script>
+/* ----- 사이드바 토글 & 페이지 이동 ----- */
+document.getElementById('accordionBtn').addEventListener('click',()=>{
+  document.getElementById('accordionList').classList.toggle('hidden');
+  document.querySelector('#accordionBtn i').classList.toggle('rotate-180');
+});
+document.querySelectorAll('#accordionList a').forEach(a=>{
+  a.addEventListener('click',e=>{e.preventDefault();location.href=a.getAttribute('href');});
+});
+
+/* -------------------- admin 기능 -------------------- */
+const headers     = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
+const resultsDiv  = document.getElementById('results');
+const btnSearch   = document.getElementById('btnSearch');
+const btnUpload   = document.getElementById('btnUpload');
+const autoUpload  = document.getElementById('autoUpload');
+const btnAutoCI   = document.getElementById('btnAutoCI');
+const loadingModal= document.getElementById('loadingModal');
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+document.getElementById('fromDate').value = todayStr();
+document.getElementById('toDate'  ).value = todayStr();
+
+function formatDate8(s){
+  const m=/^(\d{4})(\d{2})(\d{2})$/.exec(s);
+  return m?`${m[1]}-${m[2]}-${m[3]}`:s;
+}
+
+function renderTable(data){
+  if(!Array.isArray(data)||!data.length){
+    resultsDiv.textContent='조회된 결과가 없습니다.'; return;
+  }
+  data=data.map(r=>({...r, G:formatDate8(r.G||''), I:formatDate8(r.I||'') }));
+  const table=document.createElement('table');
+  table.innerHTML = `
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>
+      ${data.map(row=>`<tr>${headers.map(h=>`<td>${row[h]||''}</td>`).join('')}</tr>`).join('')}
+    </tbody>`;
+  resultsDiv.innerHTML=''; resultsDiv.appendChild(table);
+}
+
+async function doSearch(){
+  const from=document.getElementById('fromDate').value;
+  const to  =document.getElementById('toDate').value;
+  if(!from||!to){ alert('날짜를 모두 선택하세요.'); return null; }
+  loadingModal.style.display='flex';
+  try{
+    const res=await fetch('/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from,to})});
+    if(!res.ok) throw new Error(await res.text());
+    const data=await res.json(); renderTable(data); return data;
+  }finally{ loadingModal.style.display='none'; }
+}
+
+async function doUpload(rows){
+  await fetch('/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});
+}
+
+btnSearch.addEventListener('click',doSearch);
+
+btnUpload.addEventListener('click',async()=>{
+  const table=resultsDiv.querySelector('table');
+  if(!table){ alert('먼저 조회를 수행하세요.'); return; }
+  if(!confirm('기존 데이터를 모두 덮어씌우고 업로드하시겠습니까?')) return;
+  const rows=[...table.querySelectorAll('tbody tr')].map(tr=>[...tr.cells].map(td=>td.textContent.trim()));
+  try{ await doUpload(rows); alert('덮어쓰기 완료'); }
+  catch(e){ alert('업로드 오류: '+e.message); }
+});
+
+autoUpload.addEventListener('change',async()=>{
+  await fetch('/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({auto:autoUpload.checked?1:0})});
+});
+
+btnAutoCI.addEventListener('click',async()=>{
+  const from=document.getElementById('fromDate').value;
+  const to  =document.getElementById('toDate').value;
+  if(!from||!to){ alert('날짜를 모두 선택하세요.'); return; }
+  if(!confirm(`PMS에서 ${from} ~ ${to} 기간의 모든 예약을 일괄 CHECK IN 처리합니다.`)) return;
+  try{
+    btnAutoCI.disabled=true; btnAutoCI.textContent='진행 중...';
+    const res=await fetch('/auto-checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from,to})});
+    if(!res.ok) throw new Error(await res.text());
+    const {done}=await res.json(); alert(`자동 CHECK IN 완료: ${done}건`);
+  }catch(e){ alert('오류: '+e.message); }
+  finally{ btnAutoCI.disabled=false; btnAutoCI.textContent='자동 체크인 마감 진행'; }
+});
+
+window.addEventListener('load',async()=>{
+  try{
+    const cfg=await fetch('/config').then(r=>r.json());
+    autoUpload.checked=cfg.auto===1;
+  }catch{}
+});
+</script>
+</body>
+</html>

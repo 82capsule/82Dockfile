@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Google Fonts: Poppins -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Noto+Sans+KR&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+      }
+      body {
+        font-family: 'Poppins','Noto Sans KR', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      }
+      .tab-container {
+        background: transparent;
+        border: none;
+        border-radius: 1rem 1rem 0 0;
+        overflow: hidden;
+        box-shadow: none;
+        width: 100%;
+        position: relative;
+        top: -2rem;
+        padding-bottom: 1rem;
+      }
+      @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulseBorder {
+        0%   { box-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+        50%  { box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+      }
+      .greeting {
+        position: absolute;
+        top: 50%;
+        left: 1rem;
+        transform: translateY(-50%);
+        text-align: left;
+        color: #fff;
+        animation: fadeInDown 0.8s ease-out;
+      }
+      .greeting h1 {
+        margin: 0;
+        font-weight: 400;
+        font-size: clamp(1.5rem, 6vw, 2.5rem);
+      }
+      .greeting h1 strong {
+        font-weight: 700;
+      }
+      .greeting h2 {
+        margin: 0.25rem 0 0;
+        font-weight: 400;
+        font-size: clamp(1.25rem, 5vw, 2rem);
+      }
+      .greeting .subtext {
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+        opacity: 0.85;
+      }
+      .tab-buttons {
+        display: flex;
+        position: relative;
+        background: #ffffff;
+      }
+      .tab-button {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem 0;
+        cursor: pointer;
+        font-weight: 500;
+        color: #6b7280;
+      }
+      .tab-button.active {
+        color: #111827;
+      }
+      .indicator {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50%;
+        height: 3px;
+        background: #111827;
+        transition: left 0.3s ease;
+      }
+      .border {
+        border: none !important;
+        background: #ffffff;
+        border-radius: 0.5rem;
+        animation: fadeInUp 1s ease-out, pulseBorder 2s infinite;
+      }
+      /* overlay 색상을 흰색에서 어두운 반투명으로 변경 */
+      .modal-overlay {
+        inset: 0;
+        position: fixed;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+      }
+      .slider-item {
+        animation: fadeInUp 0.8s ease-out;
+      }
+      .modal-content {
+        background: #ffffff;
+        border-radius: 1rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        padding: 1.5rem;
+        max-width: 20rem;
+        width: 100%;
+        animation: fadeInUp 0.5s ease-out;
+      }
+    </style>
+    <title>Reservation Info</title>
+  </head>
+  <body>
+    <!-- Top background -->
+    <div class="w-full h-[28.57vh] relative overflow-hidden">
+      <img src="img/background.png" alt="Background" class="w-full h-full object-cover"/>
+      <div class="greeting">
+        <h1><strong id="guestName"></strong>님</h1>
+        <h2 data-lang='{"en":"Welcome!","ko":"환영합니다!","ja":"ようこそ！","zh":"欢迎！"}'></h2>
+        <p class="subtext" data-lang='{"en":"82 CAPSULE HOTEL","ko":"82 캡슐 호텔","ja":"82カプセルホテル","zh":"82胶囊旅馆"}'></p>
+      </div>
+    </div>
+
+    <!-- Tabs overlapping background -->
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <div id="tab1-btn" class="tab-button active" data-lang='{"en":"Reservation","ko":"예약정보","ja":"予約情報","zh":"预约信息"}'></div>
+        <div id="tab2-btn" class="tab-button" data-lang='{"en":"Facilities","ko":"시설정보","ja":"施設情報","zh":"设施信息"}'></div>
+        <div id="tab-indicator" class="indicator"></div>
+      </div>
+
+      <!-- Reservation Info -->
+      <div id="tab1-content" class="p-4 space-y-4">
+        <!-- Breakfast banner -->
+        <img id="breakfastBanner" src="img/breakfast.png" alt="Breakfast Banner" class="w-full h-auto object-contain rounded-lg"/>
+
+        <div class="border rounded-lg p-4 space-y-4">
+          <div class="text-center font-semibold" data-lang='{"en":"Check-in / Check-out","ko":"체크인 / 체크아웃","ja":"チェックイン / チェックアウト","zh":"入住 / 退房"}'></div>
+          <div class="grid grid-cols-2 text-center text-lg font-medium">
+            <div id="checkInDate"></div>
+            <div id="checkOutDate"></div>
+          </div>
+          <div class="flex justify-center items-center space-x-4 text-sm text-gray-600">
+            <div class="text-center">
+              <div data-lang='{"en":"Check-in Time","ko":"체크인 시간","ja":"チェックイン時間","zh":"入住时间"}'></div>
+              <div>16:00</div>
+            </div>
+            <i class="fas fa-arrow-right"></i>
+            <div class="text-center">
+              <div data-lang='{"en":"Check-out Time","ko":"체크아웃 시간","ja":"チェックアウト時間","zh":"退房时间"}'></div>
+              <div>11:00</div>
+            </div>
+          </div>
+          <hr class="border-gray-200"/>
+          <div class="grid grid-cols-3 text-center text-sm">
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Platform","ko":"플랫폼","ja":"プラットフォーム","zh":"平台"}'></div>
+              <div id="company" class="font-medium text-gray-800"></div>
+            </div>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Duration","ko":"기간","ja":"期間","zh":"期间"}'></div>
+              <div id="Duration" class="font-medium text-gray-800"></div>
+            </div>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Booking #","ko":"예약번호","ja":"予約番号","zh":"预约编号"}'></div>
+              <div id="bookingNumber" class="font-medium text-gray-800"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border rounded-lg p-4 space-y-4">
+          <div class="font-semibold" data-lang='{"en":"Access Information","ko":"접근 정보","ja":"アクセス情報","zh":"访问信息"}'></div>
+          <div class="grid grid-cols-[auto_1fr] items-center gap-4 text-sm">
+            <img src="img/bed.png" class="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Room Number","ko":" 객실 번호 ","ja":"客室番号","zh":"房间号"}'></div>
+              <div id="room" class="font-bold text-gray-800"></div>
+            </div>
+            <img src="img/locker.png" class="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Locker PIN","ko":"라커 비밀번호","ja":"ロッカーPIN","zh":"储物柜PIN"}'></div>
+              <div id="accessLockerPassword" class="font-bold text-gray-800"></div>
+            </div>
+            <img src="img/wifi.png" class="w-8 h-8 md:w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500">WiFi</div>
+              <div class="font-bold text-gray-800">82 Capsule Hotel 5F</div>
+            </div>
+            <img src="img/wifipassword.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"WiFi Password","ko":"와이파이 비밀번호","ja":"Wi-Fiパスワード","zh":"WiFi密码"}'></div>
+              <div class="font-bold text-gray-800">capsule2025!</div>
+            </div>
+            <img src="img/door.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Entrance Password","ko":"출입구 비밀번호","ja":"出入口 パスワード","zh":"出入口 密码"}'></div>
+              <div class="font-bold text-gray-800">2025#</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Facilities Info -->
+      <div id="tab2-content" class="hidden p-4 space-y-4">
+        <div class="border rounded-lg p-4 space-y-4 text-sm">
+          <div class="font-semibold" data-lang='{"en":"Facility Guide","ko":"시설안내","ja":"施設案内","zh":"设施指南"}'></div>
+          <div class="grid grid-cols-[auto_1fr] gap-4 items-center">
+            <img src="img/frontdesk.png" class="w-8 h-8 md:w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Front Desk","ko":"안내데스크","ja":"フロント","zh":"前台"}'></div>
+              <div class="font-bold">5F</div>
+            </div>
+            <img src="img/toilet.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Restroom","ko":"화장실","ja":"トイレ","zh":"卫生间"}'></div>
+              <div class="font-bold" data-lang='{"en":"5F (Women in locker room)","ko":"5층(여자: 라커룸 내)","ja":"5階(女性ロッカールーム内)","zh":"5层(女士储物柜内)"}'></div>
+            </div>
+            <img src="img/clock.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Working Hours","ko":"근무 시간","ja":"営業時間","zh":"工作时间"}'></div>
+              <div class="font-bold">11:00~23:00</div>
+            </div>
+            <img src="img/clean.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Cleaning Hours","ko":"시설 청소 시간","ja":"清掃時間","zh":"清洁时间"}'></div>
+              <div class="font-bold">11:00~18:00</div>
+            </div>
+            <img src="img/close.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Checkout Deadline","ko":"체크아웃 마감","ja":"チェックアウト締切","zh":"退房截止"}'></div>
+              <div class="font-bold">11:00</div>
+            </div>
+            <img src="img/locker.png" class="w-8 h-8 md=w-10 md=h-10 lg=w-12 lg=h-12"/>
+            <div>
+              <div class="text-gray-500" data-lang='{"en":"Entrance PIN","ko":"출입문 비밀번호","ja":"入口PIN","zh":"入口PIN"}'></div>
+              <div class="font-bold">2025*</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="image-slider" class="flex overflow-x-auto gap-2 mb-4">
+          <a href="#" class="slider-item flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-sm"><img src="img/background.png" class="w-full h-full object-cover"/></a>
+          <a href="#" class="slider-item flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-sm"><img src="img/toiletbackground.jpg" class="w-full h-full object-cover"/></a>
+          <a href="#" class="slider-item flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-sm"><img src="img/amenity.jpg" class="w-full h-full object-cover"/></a>
+          <a href="#" class="slider-item flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-sm"><img src="img/lounge.jpg" class="w-full h-full object-cover"/></a>
+          <a href="#" class="slider-item flex-shrink-0 w-32 h-20 rounded-lg overflow-hidden shadow-sm"><img src="img/capsule_logo.png" class="w-full h-full object-cover"/></a>
+        </div>
+
+        <div class="border rounded-lg p-4 space-y-4 text-sm">
+          <div class="font-semibold" data-lang='{"en":"Facility Map 5F","ko":"시설 지도 5F","ja":"施設マップ5階","zh":"设施地图5层"}'></div>
+          <img src="img/information.png" alt="Map" class="w-full rounded-lg shadow-sm"/>
+          <div class="font-semibold" data-lang='{"en":"Facility Map 6F : Rooms","ko":"시설 지도 6F : 도미토리","ja":"施設マップ6階：ドミトリー","zh":"设施地图6层：宿舍"}'></div>
+          <img id="dormitoryMap" src="img/men.png" alt="Dormitories" class="w-full rounded-lg shadow-sm"/>
+        </div>
+
+        <div class="my-4">
+          <a href="https://naver.me/GtU0hKsh" target="_blank" rel="noopener">
+            <img id="bannerImg" src="" alt="Laundry Banner" class="w-full h-16 object-cover rounded-lg shadow-sm"/>
+          </a>
+        </div>
+
+        <div class="text-center my-4 text-sm font-medium" data-lang='{"en":"Have any questions?","ko":"문의 사항이 있으신가요?","ja":"ご質問はございますか？","zh":"有任何疑问吗？"}'></div>
+        <div class="flex justify-center mb-8">
+          <button
+            onclick="location.href='mailto:82capsule@gmail.com'"
+            class="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition"
+            data-lang='{"en":"Contact Us","ko":"문의하기","ja":"お問い合わせ","zh":"联系我们"}'
+          ></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Locker Modal -->
+    <div id="lockerModal" class="modal-overlay hidden">
+      <div id="lockerModalContent"></div>
+    </div>
+
+    <!-- Cabinet Modal -->
+    <div id="cabinetModal" class="modal-overlay hidden" style="margin:0 10px;">
+      <div class="modal-content">
+        <h3 class="font-semibold mb-3" data-lang='{"en":"Cabinet Locker Usage","ko":"캐비넷 사물함 이용 방법","ja":"キャビネットロッカーの使用방법","zh":"储物柜使用说明"}'></h3>
+        <div class="p-4 border rounded mb-4">
+          <ol class="list-decimal pl-5 space-y-2 text-sm">
+            <li data-lang='{"en":"Get your key at the entrance.","ko":"객실 키를 매장 입구에서 가지고 오세요.","ja":"入口でキーをお取りください。","zh":"请在入口领取钥匙。"}'></li>
+            <li data-lang='{"en":"Go to the locker room and use it.","ko":"라커룸으로 가서 이용하세요.","ja":"ロッ카ールームでご利用ください。","zh":"请在储物柜房使用。"}'></li>
+            <li data-lang='{"en":"You can lock your room with that key.","ko":"열쇠뭉치에 있는 열쇠로 객실도 잠글 수 있습니다.","ja":"そのキーで客室も施錠できます。","zh":"您也可以使用此钥匙锁定房间。"}'></li>
+          </ol>
+        </div>
+        <div class="p-4 border rounded">
+          <h4 class="font-semibold mb-3" data-lang='{"en":"Cabinet Video Instructions","ko":"캐비넷 영상 안내","ja":"キャビネットビデオ案内","zh":"储物柜视频说明"}'></h4>
+          <div id="cabinetVideoContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Facility Image Modal -->
+    <div id="facilityModal" class="modal-overlay hidden">
+      <img id="facilityModalImg" src="" alt="Facility Info" class="max-w-[90%] max-h-[90%] rounded-lg shadow-lg"/>
+    </div>
+
+    <!-- Check-in Guide Modal -->
+    <div id="checkinModal" class="modal-overlay hidden">
+      <div class="modal-content text-center">
+        <img src="img/checkin.png" alt="Checkin" class="mx-auto mb-2" style="transform:scale(0.3);" />
+        <h2 class="text-2xl font-bold mb-4" data-lang='{"en":"Check-in Guide","ko":"체크인 안내","ja":"チェックインガイド","zh":"入住指南"}'></h2>
+        <ol class="list-decimal list-inside text-left space-y-2 text-sm">
+          <li data-lang='{"en":"Change into slippers at the shoe rack.","ko":"신발장에서 슬리퍼로 갈아신어주세요.","ja":"下駄箱でスリッパにお履き替えください。","zh":"请在鞋架换上拖鞋。"}'></li>
+          <li data-lang='{"en":"Organize your luggage at the 5th floor locker room.","ko":"5층 라커룸에서 짐을 정리하세요.","ja":"5階ロッカールームで荷物を整理してください。","zh":"请在5楼储物柜房整理行李。"}'></li>
+          <li data-lang='{"en":"Use your capsule on the 6th floor.","ko":"6층에서 캡슐을 이용하세요.","ja":"6階でカプセルをご利用ください。","zh":"请在6楼使用胶囊床。"}'></li>
+          <li data-lang='{"en":"Have a comfortable stay.","ko":"편안한 시간 보내세요.","ja":"ごゆっくりお過ごしください。","zh":"祝您入住愉快。"}'></li>
+        </ol>
+        <button id="closeCheckinModal" class="mt-4 px-4 py-2 bg-black text-white rounded-lg font-medium" data-lang='{"en":"Close","ko":"닫기","ja":"閉じる","zh":"关闭"}'></button>
+      </div>
+    </div>
+
+    <!-- Confirm Check-in Modal -->
+    <div id="confirmCheckinModal" class="modal-overlay hidden">
+      <div class="modal-content text-center">
+        <p class="text-lg mb-4" data-lang='{"en":"Do you want to check in now?","ko":"체크인 처리 하시겠습니까?","ja":"チェックインしますか？","zh":"是否现在办理入住？"}'></p>
+        <button id="confirmCheckinBtn" class="mx-2 px-4 py-2 bg-green-600 text-white rounded-lg font-medium" data-lang='{"en":"Check-in","ko":"체크인","ja":"チェックイン","zh":"办理入住"}'></button>
+        <button id="cancelCheckinBtn" class="mx-2 px-4 py-2 bg-gray-300 rounded-lg font-medium" data-lang='{"en":"Cancel","ko":"취소","ja":"キャンセル","zh":"取消"}'></button>
+      </div>
+    </div>
+
+    <script>
+      // cookie helper
+      function getCookie(name) {
+        const v = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+        return v ? decodeURIComponent(v[1]) : null;
+      }
+      function setCookie(name, value, days) {
+        const d = new Date();
+        d.setTime(d.getTime() + days * 24*60*60*1000);
+        document.cookie = name + '=' + encodeURIComponent(value) + '; expires=' + d.toUTCString() + '; path=/';
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // 언어 결정
+        let key = 'en'; 
+        const lang = navigator.language;
+        if (lang.startsWith('ko')) key = 'ko';
+        else if (lang.startsWith('ja')) key = 'ja';
+        else if (lang.startsWith('zh')) key = 'zh';
+        document.querySelectorAll('[data-lang]').forEach(el => {
+          try {
+            const o = JSON.parse(el.getAttribute('data-lang'));
+            el.textContent = o[key] || o.en;
+          } catch {}
+        });
+
+        // 배너 이미지
+        const breakfastBanner = document.getElementById('breakfastBanner');
+        switch (key) {
+          case 'en': breakfastBanner.src = 'img/breakfast_en.png'; break;
+          case 'ja': breakfastBanner.src = 'img/breakfast_jp.png'; break;
+          case 'zh': breakfastBanner.src = 'img/breakfast_cn.png'; break;
+          default: breakfastBanner.src = 'img/breakfast.png';
+        }
+
+        // URL 파라미터로 데이터 채우기
+        const params = new URLSearchParams(window.location.search);
+        const data = JSON.parse(decodeURIComponent(params.get('data')));
+        document.getElementById('guestName').textContent = data.guestName;
+        document.getElementById('checkInDate').textContent = data.checkInDate;
+        document.getElementById('checkOutDate').textContent = data.checkOutDate;
+        document.getElementById('company').textContent = data.company;
+        document.getElementById('Duration').textContent = data.duration;
+        document.getElementById('bookingNumber').textContent = data.bookingNumber;
+        document.getElementById('room').textContent = data.room;
+
+        // 청소 시간 여부
+        const now = new Date();
+        const hours = now.getHours();
+        const isCleaningTime = (hours >= 11 && hours < 15);
+        const cleaningMessages = {
+          en: "It's cleaning time. Please leave your luggage inside and come back after check-in time.",
+          ko: "현재 청소 시간입니다. 짐을 내부에 두시고 체크인 시간 이후에 다시 방문해주세요.",
+          ja: "現在清掃時間です。荷物を室内に置いて、チェックイン時間以降に再度お越しください。",
+          zh: "当前是清洁时间。请将行李放在内部，并于入住时间后再回来。"
+        };
+        const cleaningButtonText = { en:"Next", ko:"다음", ja:"次へ", zh:"下一步" };
+
+        // Locker modal 컨텐츠를 동적으로 삽입할 컨테이너
+        const lockerModalContent = document.getElementById('lockerModalContent');
+        const lockerModalOverlay = document.getElementById('lockerModal');
+
+        // 쿠키 키
+        const cookieKey = `checkedIn_${data.bookingNumber}`;
+
+        // Entrance PIN 모달
+        function showEntrancePIN() {
+          lockerModalContent.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-semibold">${key==='ko'?'현관 PIN':'Entrance PIN'}</h2>
+            </div>
+            <div class="border p-6 rounded-lg text-center">
+              <p class="text-4xl font-bold">${data.entranceCode || '2025#'}</p>
+            </div>
+            <button id="lockerCloseBtn" class="w-full py-2 bg-black text-white rounded-lg font-medium">
+              ${key==='ko'?'닫기':'Close'}
+            </button>
+          `;
+          document.getElementById('lockerCloseBtn').onclick = () => {
+            lockerModalOverlay.classList.add('hidden');
+            // close 후 체크인 확인 모달 표시 (쿠키 체크)
+            if (!getCookie(cookieKey)) {
+              document.getElementById('confirmCheckinModal').classList.remove('hidden');
+            }
+          };
+        }
+
+        // Cleaning Notice 모달
+        function showCleaningModal() {
+          lockerModalContent.innerHTML = `
+            <div class="modal-content text-center">
+              <h2 class="text-xl font-semibold mb-4">${key === 'ko' ? '청소 시간 안내' : key === 'ja' ? '清掃時間のお知らせ' : key === 'zh' ? '清洁时间提示' : 'Cleaning Time Notice'}</h2>
+              <p class="text-sm mb-6">${cleaningMessages[key]}</p>
+              <button id="lockerNextButton" class="w-full py-2 bg-black text-white rounded-lg font-medium">${cleaningButtonText[key]}</button>
+            </div>
+          `;
+          document.getElementById('lockerNextButton').onclick = () => {
+            showEntrancePIN();
+          };
+        }
+
+        // Locker PIN 모달
+        function showLockerPINModal(lockerPwd) {
+          lockerModalContent.innerHTML = `
+            <div class="modal-content space-y-6">
+              <div>
+                <h2 class="text-xl font-semibold" data-lang='{"en":"Locker Access","ko":"라커 접근","ja":"ロッカーアクセス","zh":"储物柜访问"}'></h2>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
+                  <span class="text-sm text-gray-500" data-lang='{"en":"Room No.","ko":"객실 번호","ja":"客室番号","zh":"房间号"}'></span>
+                  <span id="modalRoom" class="mt-2 text-2xl font-bold text-gray-800">${data.room}</span>
+                </div>
+                <div class="flex flex-col items-center p-4 bg-blue-50 rounded-lg">
+                  <span class="text-sm text-blue-500" data-lang='{"en":"Locker PIN","ko":"라커 PIN","ja":"ロッカーPIN","zh":"储物柜PIN"}'></span>
+                  <span id="modalPwd" class="mt-2 text-2xl font-bold text-blue-600">${lockerPwd}</span>
+                </div>
+              </div>
+              <button id="lockerNextButton" class="w-full py-2 bg-black text-white rounded-lg font-medium" data-lang='{"en":"Show Entrance Code","ko":"현관 비밀번호 보기","ja":"入口PINを表示","zh":"显示入口PIN"}'></button>
+            </div>
+          `;
+          lockerModalContent.querySelectorAll('[data-lang]').forEach(el => {
+            try {
+              const o = JSON.parse(el.getAttribute('data-lang'));
+              el.textContent = o[key] || o.en;
+            } catch {}
+          });
+          document.getElementById('lockerNextButton').onclick = () => {
+            showEntrancePIN();
+          };
+        }
+
+        // 페이지 로드 후 0.3초 뒤에 모달 띄우기
+        setTimeout(() => {
+          lockerModalOverlay.classList.remove('hidden');
+          if (isCleaningTime) {
+            showCleaningModal();
+          } else {
+            fetch('/locker-info')
+              .then(r => r.json())
+              .then(l => {
+                let pwd = '';
+                if (l.locker_room_men.includes(data.room)) {
+                  pwd = l.locker_password_men[l.locker_room_men.indexOf(data.room)];
+                } else if (l.locker_room_women.includes(data.room)) {
+                  pwd = l.locker_password_women[l.locker_room_women.indexOf(data.room)];
+                }
+                document.getElementById('accessLockerPassword').textContent = pwd;
+                showLockerPINModal(pwd);
+              })
+              .catch(() => {
+                showLockerPINModal('');
+              });
+          }
+        }, 300);
+
+        // Cabinet Video 삽입
+        const vidCont = document.getElementById('cabinetVideoContainer');
+        if (vidCont) {
+          vidCont.innerHTML = key==='ko'
+            ? '<iframe class="rounded-lg" width="100%" height="200" src="https://www.youtube.com/embed/1NL-JwFZ9rA" frameborder="0" allowfullscreen></iframe>'
+            : '<iframe class="rounded-lg mb-4" width="100%" height="200" src="https://www.youtube.com/embed/TFeNfa-CGeY" frameborder="0" allowfullscreen></iframe>' +
+              '<iframe class="rounded-lg" width="100%" height="200" src="https://www.youtube.com/embed/I802MSs8aQk" frameborder="0" allowfullscreen></iframe>';
+        }
+
+        // tab 전환
+        const ind = document.getElementById('tab-indicator');
+        document.getElementById('tab1-btn').onclick = ()=>{ ind.style.left='0'; document.getElementById('tab1-content').classList.remove('hidden'); document.getElementById('tab2-content').classList.add('hidden'); };
+        document.getElementById('tab2-btn').onclick = ()=>{ ind.style.left='50%'; document.getElementById('tab2-content').classList.remove('hidden'); document.getElementById('tab1-content').classList.add('hidden'); };
+
+        // Dormitory map
+        const dormImg = document.getElementById('dormitoryMap');
+        if (data.room.startsWith('E')) {
+          dormImg.src = 'img/men.png';
+          dormImg.alt = key==='ko'?'남자 도미토리 지도':'Men Dormitory Map';
+        } else {
+          dormImg.src = 'img/women.png';
+          dormImg.alt = key==='ko'?'여자 도ミ토리 지도':'Women Dormitory Map';
+        }
+
+        // Laundry banner
+        const banner = document.getElementById('bannerImg');
+        switch (key) {
+          case 'ko': banner.src='img/laundrykr.png'; break;
+          case 'ja': banner.src='img/laundryjp.png'; break;
+          case 'zh': banner.src='img/laundrycn.png'; break;
+          default:   banner.src='img/laundryen.png';
+        }
+
+        // 체크인 확인 버튼
+        document.getElementById('confirmCheckinBtn').onclick = () => {
+          fetch('/checkin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingNumber: data.bookingNumber })
+          }).catch(console.error);
+          setCookie(cookieKey, 'true', 7);
+          document.getElementById('confirmCheckinModal').classList.add('hidden');
+        };
+        document.getElementById('cancelCheckinBtn').onclick = () => {
+          setCookie(cookieKey, 'true', 1);
+          document.getElementById('confirmCheckinModal').classList.add('hidden');
+        };
+
+        // Check-in Guide 닫기
+        document.getElementById('closeCheckinModal')?.addEventListener('click',()=>{
+          document.getElementById('checkinModal').classList.add('hidden');
+        });
+
+        // Facility image modal
+        document.querySelectorAll('#image-slider a').forEach(el=>{
+          el.addEventListener('click',e=>{
+            e.preventDefault();
+            const fm = document.getElementById('facilityModal');
+            const fimg = document.getElementById('facilityModalImg');
+            fimg.src = el.querySelector('img').src;
+            fm.classList.remove('hidden');
+          });
+        });
+        document.getElementById('facilityModal')?.addEventListener('click',()=>{
+          document.getElementById('facilityModal').classList.add('hidden');
+        });
+
+        // Cabinet Modal open
+        document.getElementById('cabinetBtn')?.addEventListener('click',()=>{
+          document.getElementById('cabinetModal').classList.remove('hidden');
+        });
+      });
+    </script>
+
+    <!-- Channel.io script -->
+    <script>
+      (function() {
+        var w = window;
+        if (w.ChannelIO) return;
+        var ch = function() { ch.c(arguments); };
+        ch.q = [];
+        ch.c = function(args) { ch.q.push(args); };
+        w.ChannelIO = ch;
+        function l() {
+          if (w.ChannelIOInitialized) return;
+          w.ChannelIOInitialized = true;
+          var s = document.createElement("script");
+          s.type = "text/javascript"; s.async = true;
+          s.src = "https://cdn.channel.io/plugin/ch-plugin-web.js";
+          var x = document.getElementsByTagName("script")[0];
+          x.parentNode.insertBefore(s, x);
+        }
+        if (document.readyState === "complete") l();
+        else {
+          window.addEventListener("DOMContentLoaded", l);
+          window.addEventListener("load", l);
+        }
+      })();
+      ChannelIO('boot', { "pluginKey": "428b343a-213b-4221-b859-0adc381ca394" });
+    </script>
+  </body>
+</html>

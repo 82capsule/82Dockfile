@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Reservation</title>
+</head>
+<body>
+  <h1>Host Reservation</h1>
+  <form id="reservationForm">
+    <label>예약일자: <input type="text" id="reservationDate" name="reservationDate"></label><br>
+    <label>ACCT#: <input type="text" id="acct" name="acct"></label><br>
+    <label>Booking number(OTA): <input type="text" id="bookingNumber" name="bookingNumber"></label><br>
+    <label>객실: <input type="text" id="room" name="room"></label><br>
+    <label>객실 타입: <input type="text" id="roomType" name="roomType"></label><br> <!-- 추가된 필드 -->
+    <label>객실 수: <input type="text" id="roomCount" name="roomCount"></label><br>
+    <label>입실일: <input type="text" id="checkInDate" name="checkInDate"></label><br>
+    <label>박 수: <input type="text" id="duration" name="duration"></label><br> <!-- 수정된 필드 -->
+    <label>퇴실일: <input type="text" id="checkOutDate" name="checkOutDate"></label><br> <!-- 추가된 필드 -->
+    <label>성인: <input type="text" id="adults" name="adults"></label><br>
+    <label>소인: <input type="text" id="children" name="children"></label><br>
+    <label>그룹명: <input type="text" id="groupName" name="groupName"></label><br>
+    <label>거래처: <input type="text" id="company" name="company"></label><br>
+    <label>고객명: <input type="text" id="guestName" name="guestName"></label><br>
+    <button type="submit">Submit</button>
+  </form>
+
+  <script>
+    document.getElementById('reservationForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const formData = {
+        reservationDate: document.getElementById('reservationDate').value,
+        acct: document.getElementById('acct').value,
+        bookingNumber: document.getElementById('bookingNumber').value,
+        room: document.getElementById('room').value,
+        roomType: document.getElementById('roomType').value, // 추가된 필드
+        roomCount: document.getElementById('roomCount').value,
+        checkInDate: document.getElementById('checkInDate').value,
+        duration: document.getElementById('duration').value, // 수정된 필드
+        checkOutDate: document.getElementById('checkOutDate').value, // 추가된 필드
+        adults: document.getElementById('adults').value,
+        children: document.getElementById('children').value,
+        groupName: document.getElementById('groupName').value,
+        company: document.getElementById('company').value,
+        guestName: document.getElementById('guestName').value
+      };
+
+      fetch('/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      })
+      .then(response => response.text())
+      .then(data => alert(data))
+      .catch(error => console.error('Error:', error));
+    });
+  </script>
+</body>
+</html>

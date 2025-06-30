@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Font : Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* ───── 공통 ───── */
+    body{font-family:'Inter',sans-serif;}
+    .glass{background:rgba(255,255,255,.6);backdrop-filter:blur(20px);}
+    .gradient-text{background:linear-gradient(90deg,#8b5cf6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+    /* ───── 체크인 마스킹 ───── */
+    .checked-row{position:relative;}
+    .checked-row>td:not(.toggle-cell){color:transparent;}
+    .checked-row::after{
+      content:"\f058  체크인 완료";
+      font-family:"Font Awesome 6 Free","Inter";
+      font-weight:900;
+      position:absolute;top:0;right:0;bottom:0;left:56px; /* 토글셀 제외 */
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(229,231,235,.95);color:#059669;font-size:.9rem;
+      pointer-events:none;z-index:10;
+    }
+    .checked-row.reveal>td{color:#374151;}
+    .checked-row.reveal::after{display:none;}
+    .checked-row .toggle{position:relative;z-index:20;}
+
+    /* ───── 토글 (그라디언트 라운드 사각) ───── */
+    .toggle{position:relative;width:80px;height:24px;}
+    .toggle input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .toggle-track{
+      width:100%;height:100%;
+      background:#b1b1b1;
+      border-radius:12px;
+      transition:background .25s;
+      display:flex;align-items:center;
+    }
+    .toggle-thumb{
+      width:20px;height:20px;
+      
+      background:linear-gradient(90deg,#8b5cf6,#a855f7);
+      border-radius:10px;
+      margin-left:2px;
+      box-shadow:0 0 3px rgba(0,0,0,.5);
+      transition:transform .25s;
+    }
+    /* ON 상태 */
+    .toggle input:checked + .toggle-track{
+      background:#c0c0c0;
+    }
+    .toggle input:checked + .toggle-track .toggle-thumb{
+      transform:translateX(20px);
+    }
+  </style>
+  <title>관리자 대시보드</title>
+</head>
+<body class="h-screen flex overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50">
+
+  <!-- ───────── 사이드바 ───────── -->
+  <aside class="w-64 bg-gradient-to-b from-purple-700 to-indigo-700 text-white flex-shrink-0 shadow-xl">
+    <div class="p-6 text-2xl font-bold gradient-text">관리자 카테고리</div>
+    <nav class="px-4">
+      <ul>
+        <li>
+          <button id="accordionBtn" class="w-full text-left py-3 flex justify-between items-center hover:bg-purple-600 rounded-lg px-2 transition">
+            <span class="font-semibold">메뉴 펼치기</span>
+            <i class="fas fa-chevron-down transition-transform duration-200"></i>
+          </button>
+          <ul id="accordionList" class="mt-2 ml-4 space-y-1 hidden">
+            <li><a href="index.html"            data-page="dashboard"            class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">대시보드</a></li>
+            <li><a href="host-reservation.html" data-page="host-reservation.html" class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">호스트 예약 직접 등록</a></li>
+            <li><a href="guest-search.html"    data-page="guest-search.html"    class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 검색 페이지</a></li>
+            <li><a href="guest_sheet.html"     data-page="guest_sheet.html"     class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 예약 리스트</a></li>
+            <li><a href="first_page.html"      data-page="first_page.html"      class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">게스트 선택 페이지</a></li>
+            <li><a href="admin.html"           data-page="admin.html"           class="block py-2 px-4 rounded-lg hover:bg-purple-600 transition">객실 정보 업데이트</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- ───────── 메인 ───────── -->
+  <main id="mainContent" class="flex-1 p-8 overflow-auto">
+    <section id="dashboard" class="space-y-8">
+      <!-- 원형 그래프 3개 -->
+      <div class="grid grid-cols-3 gap-6">
+        <div class="rounded-2xl shadow-lg glass p-6">
+          <h3 class="text-xl font-semibold mb-4">어제자 체크인율</h3>
+          <div class="flex items-center" style="width:70%;">
+            <canvas id="chartYesterdayDonut" class="w-16 h-16"></canvas>
+            <div id="textYesterdayPercent" class="ml-4 text-2xl font-bold gradient-text">--%</div>
+          </div>
+        </div>
+        <div class="rounded-2xl shadow-lg glass p-6">
+          <h3 class="text-xl font-semibold mb-4">오늘자 체크인율</h3>
+          <div class="flex items-center" style="width:70%;">
+            <canvas id="chartTodayDonut" class="w-16 h-16"></canvas>
+            <div id="textTodayPercent" class="ml-4 text-2xl font-bold gradient-text">--%</div>
+          </div>
+        </div>
+        <div class="rounded-2xl shadow-lg glass p-6">
+          <h3 class="text-xl font-semibold mb-4">노쇼율</h3>
+          <div class="flex items-center" style="width:70%;">
+            <canvas id="chartNoShowDonut" class="w-16 h-16"></canvas>
+            <div id="textNoShowPercent" class="ml-4 text-2xl font-bold gradient-text">--%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기간별 -->
+      <div class="rounded-2xl shadow-lg glass p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <label for="dateStart" class="text-gray-700 font-medium">시작일:</label>
+            <input type="date" id="dateStart" class="border rounded-lg p-2 focus:ring-2 focus:ring-purple-400" />
+            <label for="dateEnd" class="text-gray-700 font-medium">종료일:</label>
+            <input type="date" id="dateEnd" class="border rounded-lg p-2 focus:ring-2 focus:ring-purple-400" />
+            <button id="btnLoadRange" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-lg shadow-md hover:opacity-90 transition">적용</button>
+          </div>
+          <div class="text-gray-800 font-bold text-lg">
+            오늘 체크인 인원 수: <span id="todayCount">0</span>
+          </div>
+        </div>
+        <canvas id="chartCheckinLine" class="w-full h-64 mb-8"></canvas>
+        <canvas id="chartDateBar"     class="w-full h-64"></canvas>
+      </div>
+
+      <!-- 테이블 -->
+      <div class="rounded-2xl shadow-lg glass p-6">
+        <h3 class="text-xl font-semibold mb-4">체크인 상세 내역</h3>
+        <div id="tableContainer"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- index.js -->
+  <script src="index.js"></script>
+
+  <!-- ───────── 인라인 스크립트 ───────── -->
+  <script>
+    /* 사이드바 */
+    document.getElementById('accordionBtn').addEventListener('click',()=>{
+      const ul=document.getElementById('accordionList');
+      ul.classList.toggle('hidden');
+      document.querySelector('#accordionBtn i').classList.toggle('rotate-180');
+    });
+    document.querySelectorAll('[data-page]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();location.href=a.dataset.page;}));
+
+    /* 차트 유틸 */
+    const sheetName=off=>{const d=new Date();d.setDate(d.getDate()+off);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+    const fetchStats=async n=>(await fetch(`/daily-stats?sheetName=${n}`)).json().then(j=>j.stats||[['체크인율','0%'],['노쇼율','0%']]);
+    const donut=(cid,tid,val,c1,c2)=>{const ctx=document.getElementById(cid).getContext('2d'),g=ctx.createLinearGradient(0,0,0,ctx.canvas.height);g.addColorStop(0,c1);g.addColorStop(1,c2);new Chart(ctx,{type:'doughnut',data:{labels:['',''],datasets:[{data:[val,1-val],backgroundColor:[g,'#e5e7eb'],borderWidth:0}]},options:{cutout:'80%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});document.getElementById(tid).textContent=`${(val*100).toFixed(0)}%`}
+
+    document.addEventListener('DOMContentLoaded',async()=>{
+      const y=await fetchStats(sheetName(-1)),t=await fetchStats(sheetName(0));
+      donut('chartYesterdayDonut','textYesterdayPercent',parseFloat(y[0][1])/100,'#8b5cf6','#a855f7');
+      donut('chartTodayDonut'   ,'textTodayPercent'   ,parseFloat(t[0][1])/100,'#3b82f6','#06b6d4');
+      donut('chartNoShowDonut'  ,'textNoShowPercent'  ,parseFloat(t[1][1])/100,'#ef4444','#f97316');
+      if(window.loadRangeCharts)await window.loadRangeCharts();
+      await loadTodayTable();
+    });
+
+    /* Bar 차트 */
+    let barChart=null;
+    document.getElementById('btnLoadRange').addEventListener('click',async()=>{
+      if(window.loadRangeCharts)await window.loadRangeCharts();
+      const s=new Date(dateStart.value),e=new Date(dateEnd.value),lbls=[];
+      for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))lbls.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+      const vals=await Promise.all(lbls.map(d=>fetch(`/daily-stats?sheetName=${d}`).then(r=>r.json()).then(j=>parseFloat(j.stats?.[0]?.[1].replace('%',''))||0).catch(()=>0)));
+      if(barChart)barChart.destroy();
+      barChart=new Chart(document.getElementById('chartDateBar').getContext('2d'),{type:'bar',data:{labels:lbls,datasets:[{label:'일별 체크인율',data:vals,backgroundColor:'rgba(139,92,246,0.7)',borderRadius:6,barPercentage:.6}]},options:{scales:{x:{grid:{display:false}},y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},plugins:{legend:{display:false},tooltip:{backgroundColor:'#8b5cf6',titleColor:'#fff',bodyColor:'#fff',callbacks:{label:ctx=>ctx.parsed.y+'%'}}}}});
+    });
+
+    /* 오늘자 테이블 */
+    async function loadTodayTable(){
+      const r=await fetch('/today-table');if(!r.ok){console.error('로드 실패');return;}
+      const {header,rows}=await r.json();
+      let html='<div class="overflow-x-auto"><table class="min-w-full text-sm text-gray-800 border-collapse"><thead class="bg-gray-200 text-gray-700 text-xs uppercase font-semibold"><tr>';
+      html+='<th class="px-2 py-2 w-[56px]">표시</th>';
+      header.forEach(h=>html+=`<th class="px-3 py-2 whitespace-nowrap">${h}</th>`);html+='</tr></thead><tbody>';
+
+      let cnt=0;
+      rows.forEach((row,i)=>{
+        const chk=row.checkedIn;if(chk)cnt++;
+        const id=`row-${i}`;
+        html+=`<tr id="${id}" class="border-b ${chk?'checked-row':'hover:bg-gray-50'}">`;
+        html+='<td class="toggle-cell px-2 py-2 text-center">';
+        if(chk){
+          html+=`
+            <label class="toggle">
+              <input type="checkbox" data-target="${id}">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>`;
+        }
+        html+='</td>';
+        row.values.forEach(v=>html+=`<td class="px-3 py-2 whitespace-nowrap">${v||''}</td>`);
+        html+='</tr>';
+      });
+      html+='</tbody></table></div>';
+      document.getElementById('tableContainer').innerHTML=html;
+
+      document.querySelectorAll('.toggle input').forEach(inp=>{
+        inp.addEventListener('change',()=>{const tr=document.getElementById(inp.dataset.target);tr.classList.toggle('reveal',inp.checked);});
+      });
+      document.getElementById('todayCount').textContent=cnt;
+    }
+    window.loadTodayTable=loadTodayTable;
+  </script>
+</body>
+</html>

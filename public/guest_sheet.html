@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guest Sheet (카드형 + 중앙스케일 + 무한 스크롤)</title>
+
+  <!-- Pretendard 폰트 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Pretendard', sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+      background: #f9f9f9;
+    }
+
+    /* 검색영역 */
+    #searchContainer {
+      width: 100%; max-width: 800px;
+      padding: 20px 0 0;
+      display: flex; gap: 12px;
+      z-index: 5;
+    }
+    #searchInput {
+      flex:1; padding:12px 16px; border:none; border-radius:12px;
+      font-size:clamp(14px,3vw,18px); background:#e7e7e7;
+      transition: background 0.3s;
+    }
+    #searchInput:focus { background:#eaeaea; outline:none; }
+    #searchButton {
+      padding:12px 20px; border:none; border-radius:10px;
+      background:hsl(34,82%,51%); color:#fff;
+      font-size:clamp(14px,3vw,18px); cursor:pointer;
+      transition: background 0.3s;
+    }
+    #searchButton:hover { background:#1558b0; }
+
+    /* 카드 스크롤 컨테이너 */
+    #cardsWrapper {
+      flex:1;
+      width:100vw;
+      overflow-y:auto;
+      overflow-x: visible;
+      padding: 20px 20px;
+    }
+    #cardsContainer {
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding-bottom: 40px;
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* 카드 디자인 */
+    .record-card {
+      position: relative;
+      background:#fff;
+      border-radius:12px;
+      padding:20px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.08);
+      border:1px solid #ccc;
+      transform-origin:center center;
+      transition: transform 0.2s ease-out;
+    }
+    .corner-badge {
+      position:absolute; top:-10px; left:-10px;
+      width:24px; height:24px; background:#ff5400;
+      color:#fff; display:flex; align-items:center;
+      justify-content:center; border-radius:4px;
+      font-size:12px; font-weight:600;
+      z-index:1;
+    }
+    .card-top {
+      display:flex; align-items:center;
+      background: linear-gradient(to right, #ff9a00, #ff5400);
+      padding:16px; margin:-20px -20px 12px -20px;
+      border-radius:10px 10px 0 0; color:#fff;
+      font-size:clamp(12px,3vw,16px);
+    }
+    .card-top .item { flex:1; word-break:break-word; }
+    .card-top .label { display:block; opacity:0.9; font-weight:500;}
+    .card-top .value strong { font-size:clamp(14px,3.2vw,18px); }
+    .card-divider { border-top:1px solid #e0e0e0; margin:8px 0; }
+    .dates-label { text-align:center; color:#666; font-weight:500; margin-bottom:6px; font-size:clamp(11px,2.5vw,14px);}
+    .card-dates { display:flex; align-items:center; justify-content:center; font-size:clamp(12px,3vw,16px); color:#444;}
+    .card-dates .date { flex:1; text-align:center; }
+    .card-dates .arrow { margin:0 8px; font-size:clamp(14px,4vw,18px); color:#888; }
+
+    #noResult {
+      text-align:center; color:#888; font-size:clamp(14px,3vw,18px);
+      display:none; margin-top:20px;
+    }
+    .highlight { color:#1a73e8; font-weight:600; }
+
+    /* 모달 */
+    .modal-overlay {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.4); display:none;
+      align-items:center; justify-content:center; z-index:20;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal-content {
+      background:#fff; border-radius:12px; padding:24px;
+      max-width:400px; width:90%;
+      box-shadow:0 8px 24px rgba(0,0,0,0.15);
+      animation: slideDown 0.3s ease-out; text-align:center;
+    }
+    @keyframes slideDown {
+      from { opacity:0; transform:translateY(-20px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .modal-header { display:flex; justify-content:space-between; margin-bottom:16px; }
+    .info-box { flex:1; background:#f1f3f4; padding:12px; margin:0 4px; border-radius:8px; font-weight:500; word-break:break-all;}
+    .modal-body { margin:16px 0; font-size:clamp(14px,3vw,18px); color:#444; }
+    .modal-footer { display:flex; gap:16px; }
+    .btn { flex:1; padding:10px 0; border:none; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-yes { background:#1a73e8; color:#fff; }
+    .btn-yes:hover { background:#1558b0; }
+    .btn-no { background:#e0e0e0; color:#555; }
+    .btn-no:hover { background:#c6c6c6; }
+  </style>
+</head>
+<body>
+
+  <div id="searchContainer">
+    <input type="text" id="searchInput" placeholder="이름, 예약번호 또는 이메일 입력 시 필터" autocomplete="off">
+    <button id="searchButton">검색</button>
+  </div>
+
+  <div id="cardsWrapper">
+    <div id="cardsContainer"></div>
+    <div id="noResult">검색 결과가 없습니다.</div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="info-box" id="modalGuestName"></div>
+        <div class="info-box" id="modalBookingNumber"></div>
+      </div>
+      <div class="modal-body">고객님의 정보가 맞으신가요?</div>
+      <div class="modal-footer">
+        <button class="btn btn-yes" id="modalYes">네</button>
+        <button class="btn btn-no" id="modalNo">아니요</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const wrapper = document.getElementById('cardsWrapper');
+    const container = document.getElementById('cardsContainer');
+    let allRecords = [], selectedRecord = null;
+    let originalHeight = 0;
+
+    function maskName(name = '') {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) {
+        const n = parts[0], L = n.length;
+        const m = L >= 7 ? 3 : L >= 5 ? 2 : L >= 3 ? 1 : L;
+        return n.slice(0, L - m) + '*'.repeat(m);
+      }
+      const last = parts.pop();
+      return parts.join(' ') + ' ' + '*'.repeat(last.length);
+    }
+    function maskBooking(b = '') {
+      const L = b.length;
+      if (L <= 8) return '*'.repeat(L);
+      return b.slice(0,4) + '*'.repeat(L - 8) + b.slice(L - 4);
+    }
+    function highlight(text, kw) {
+      if (!kw) return text;
+      const e = kw.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
+      return text.replace(new RegExp(e, 'gi'), m => `<span class="highlight">${m}</span>`);
+    }
+    function dedupe(records) {
+      const m = new Map();
+      records.forEach(r => { if (!m.has(r.room || '')) m.set(r.room || '', r); });
+      return Array.from(m.values());
+    }
+
+    function filterAndRender(kw = '') {
+      const k = kw.trim().toLowerCase(), kn = k.replace(/\s+/g, '');
+      const list = allRecords.filter(r => {
+        if (!k) return true;
+        const bk = (r.bookingNumber||'').toLowerCase();
+        const gn = (r.guestName||'').toLowerCase().split(/\s+/).join('');
+        const rev = gn.split('').reverse().join('');
+        return bk.includes(k) || gn.includes(kn) || rev.includes(kn)
+          || (r.company||'').toLowerCase().includes(k)
+          || (r.checkInDate||'').toLowerCase().includes(k)
+          || (r.checkOutDate||'').toLowerCase().includes(k);
+      });
+      renderCards(list, k);
+    }
+
+    function renderCards(records, kw = '') {
+      container.innerHTML = '';
+      if (!records.length) {
+        document.getElementById('noResult').style.display = 'block';
+        return;
+      }
+      document.getElementById('noResult').style.display = 'none';
+      const unique = dedupe(records);
+      // 원본 카드 렌더
+      unique.forEach((r, i) => createCard(r, i, kw));
+      
+      // 무한 스크롤용 클론은 필터가 없을 때만 추가
+      if (!kw) {
+        originalHeight = container.scrollHeight;
+        unique.forEach((r, i) => createCard(r, i, kw));
+      }
+      // 초기 위치: 필터링 시 스크롤 상단으로
+      wrapper.scrollTop = kw ? 0 : 0;
+      updateScales();
+    }
+    
+
+    function createCard(r, idx, kw) {
+      const c = document.createElement('div'); c.className = 'record-card';
+      const b = document.createElement('div'); b.className = 'corner-badge'; b.textContent = idx + 1;
+      c.appendChild(b);
+      const top = document.createElement('div'); top.className = 'card-top';
+      [{key:'name', val:maskName(r.guestName)}, {key:'platform', val:r.company||''}, {key:'booking', val:maskBooking(r.bookingNumber)}]
+        .forEach(item => {
+          const d = document.createElement('div'); d.className = 'item ' + item.key;
+          d.innerHTML = `<span class="label">${item.key==='name'?'이름':item.key==='platform'?'플랫폼':'예약번호'}</span>` +
+                        `<span class="value"><strong>${highlight(item.val, kw)}</strong></span>`;
+          top.appendChild(d);
+        });
+      c.appendChild(top);
+      c.appendChild(Object.assign(document.createElement('div'), {className:'card-divider'}));
+      const lbl = document.createElement('div'); lbl.className='dates-label'; lbl.textContent='체크인/아웃'; c.appendChild(lbl);
+      const dates = document.createElement('div'); dates.className='card-dates';
+      ['checkInDate','checkOutDate'].forEach((d, i) => {
+        if (i) { const arr = document.createElement('div'); arr.className='arrow'; arr.textContent='→'; dates.appendChild(arr); }
+        const dt = document.createElement('div'); dt.className='date'; dt.innerHTML=`<strong>${highlight(r[d]||'', kw)}</strong>`;
+        dates.appendChild(dt);
+      });
+      // 체크인/체크아웃 날짜 영역 추가
+      c.appendChild(dates);
+      c.addEventListener('click', () => { selectedRecord = r; openModal(r); });
+      container.appendChild(c);
+    }
+    
+
+    // modal
+    const modal = document.getElementById('confirmModal');
+    function openModal(r) {
+      document.getElementById('modalGuestName').textContent = r.guestName || '';
+      document.getElementById('modalBookingNumber').textContent = r.bookingNumber || '';
+      modal.classList.add('open');
+    }
+    document.getElementById('modalNo').addEventListener('click', () => modal.classList.remove('open'));
+    document.getElementById('modalYes').addEventListener('click', () => {
+      if (selectedRecord) window.location.href = `/result.html?data=${encodeURIComponent(JSON.stringify(selectedRecord))}`;
+    });
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+    // 검색
+    async function onSearchButtonClick() {
+      const kw = document.getElementById('searchInput').value.trim();
+      if (!kw) return alert('검색어를 입력해주세요.');
+      try {
+        const res = await fetch(`/search?query=${encodeURIComponent(kw)}`);
+        const j = await res.json();
+        if (j.message==='Record found' && j.data?.length) {
+          window.location.href = `/result.html?data=${encodeURIComponent(JSON.stringify(j.data[0]))}`;
+        } else alert('일치하는 레코드를 찾을 수 없습니다.');
+      } catch { alert('검색 중 오류 발생'); }
+    }
+
+    async function loadAllData() {
+      try {
+        const res = await fetch(`/search?query=`);
+        const j = await res.json();
+        allRecords = j.data || [];
+      } catch { allRecords = []; }
+      filterAndRender('');
+    }
+
+    function updateScales() {
+      const cards = container.querySelectorAll('.record-card');
+      const wr = wrapper.getBoundingClientRect();
+      const centerY = wr.top + wr.height/2;
+      const maxD = wr.height/2;
+      cards.forEach(c => {
+        const r = c.getBoundingClientRect();
+        const d = Math.min(Math.abs(centerY - (r.top + r.height/2)), maxD);
+        const f = 1 - d/maxD;
+        const s = 0.7 + 0.3*f;
+        c.style.transform = `scale(${s.toFixed(3)})`;
+      });
+    }
+
+    function onScroll() {
+      if (wrapper.scrollTop >= originalHeight) {
+        wrapper.scrollTop -= originalHeight;
+      } else if (wrapper.scrollTop < 0) {
+        wrapper.scrollTop += originalHeight;
+      }
+      updateScales();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+      document.getElementById('searchInput').addEventListener('input', e => filterAndRender(e.target.value));
+      document.getElementById('searchButton').addEventListener('click', onSearchButtonClick);
+      document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key==='Enter') onSearchButtonClick(); });
+      wrapper.addEventListener('scroll', onScroll);
+      // 초기 위치 상단
+      setTimeout(() => { updateScales(); }, 300);
+    });
+  </script>
+</body>
+</html>

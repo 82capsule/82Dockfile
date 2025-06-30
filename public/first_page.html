@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>첫 페이지</title>
+
+  <!-- 다음 페이지 미리 불러오기 -->
+  <link rel="prefetch" href="guest-search.html" />
+  <link rel="prefetch" href="guest_sheet.html" />
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  />
+  <!-- Google Fonts: Poppins -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Noto+Sans+KR&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* 전체 배경 그라디언트 */
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+      overflow-x: hidden;
+      font-family: 'Pretendard';
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+    /* 슬라이드 아웃 애니메이션 */
+    body.slide-out {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .container {
+      max-width: 480px;
+      width: 90%;
+      margin: 0 auto;
+      padding: 20px 0;
+      text-align: left;
+    }
+    .title, .subtitle, .image-row, .button-row {
+      opacity: 0;
+      animation: fadeInUp 0.6s ease forwards;
+    }
+    .title {
+      font-size: 1.8rem;
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+      color: #343a40;
+      animation-delay: 0.2s;
+    }
+    .subtitle {
+      font-size: 0.8rem;
+      line-height: 1.4;
+      margin-bottom: 1.5rem;
+      color: #495057;
+      animation-delay: 0.4s;
+    }
+    .image-row {
+      display: flex;
+      justify-content: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      margin-left: 0.5rem;
+      animation-delay: 0.6s;
+    }
+    .image-row img {
+      width: 45%;
+      border-radius: 8px;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0 0.5rem;
+      animation-delay: 0.8s;
+    }
+    .button-row button {
+      flex: 1;
+      padding: 12px 0;
+      font-size: 1rem;
+      border: none;
+      border-radius: 30px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .button-row button:active { opacity: 0.8; }
+    .image-row.pressed img:not(.pressed-target) { transform: scale(0.9); }
+    .image-row.pressed img.pressed-target    { transform: scale(1.05); }
+    .button-row.pressed button               { transform: scale(0.9); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <br>
+    <br>
+    <br>
+    <br>
+    <p id="titleText" class="title"></p>
+    <p id="subtitleText" class="subtitle"></p>
+
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div class="image-row">
+      <img id="imgDirect" src="img/user_search.png" alt="" draggable="false" />
+      <img id="imgList"   src="img/list_search.png" alt="" draggable="false" />
+    </div>
+
+    <div class="button-row">
+      <button id="direct-search"></button>
+      <button id="list-search"></button>
+    </div>
+  </div>
+
+  <script>
+    // 다국어 텍스트 맵
+    const translations = {
+      ko: {
+        title: '직접 검색과 리스트 검색 방식<br>중 하나를 골라주세요',
+        subtitle: '검색이 어려울 경우 아래 채팅 상담연결 해주세요',
+        directBtn: '직접 검색 >',
+        listBtn: '리스트 검색 >',
+        imgDirectAlt: '서비스 예시 1',
+        imgListAlt: '서비스 예시 2'
+      },
+      en: {
+        title: 'Please choose<br>either Direct Search or List Search',
+        subtitle: 'If you have difficulty searching, please connect with chat support below',
+        directBtn: 'Direct Search >',
+        listBtn: 'List Search >',
+        imgDirectAlt: 'Service Example 1',
+        imgListAlt: 'Service Example 2'
+      },
+      ja: {
+        title: '直接検索またはリスト検索の<br>いずれかを選択してください',
+        subtitle: '検索が難しい場合は、下のチャットサポートにお問い合わせください',
+        directBtn: '直接検索 >',
+        listBtn: 'リスト検索 >',
+        imgDirectAlt: 'サービス例1',
+        imgListAlt: 'サービス例2'
+      },
+      zh: {
+        title: '请选择<br>直接搜索或列表搜索',
+        subtitle: '如果搜索困难，请通过下方聊天支持联系我们',
+        directBtn: '直接搜索 >',
+        listBtn: '列表搜索 >',
+        imgDirectAlt: '服务示例1',
+        imgListAlt: '服务示例2'
+      }
+    };
+
+    // 언어 감지 및 텍스트 적용
+    const langCode = navigator.language?.slice(0,2);
+    const locale = translations[langCode] ? langCode : 'ko';
+    const txt = translations[locale];
+
+    document.getElementById('titleText').innerHTML   = txt.title;
+    document.getElementById('subtitleText').textContent = txt.subtitle;
+    document.getElementById('direct-search').textContent = txt.directBtn;
+    document.getElementById('list-search').textContent   = txt.listBtn;
+    document.getElementById('imgDirect').alt = txt.imgDirectAlt;
+    document.getElementById('imgList').alt   = txt.imgListAlt;
+
+    // 기존 기능: 슬라이드 애니메이션 + 페이지 이동
+    document.getElementById('direct-search').addEventListener('click', e => {
+      e.preventDefault();
+      document.body.classList.add('slide-out');
+      setTimeout(() => { location.href = 'guest-search.html'; }, 500);
+    });
+    document.getElementById('list-search').addEventListener('click', e => {
+      e.preventDefault();
+      document.body.classList.add('slide-out');
+      setTimeout(() => { location.href = 'guest_sheet.html'; }, 500);
+    });
+
+    // 이미지 클릭 시 버튼과 동일 동작
+    const imgRow = document.querySelector('.image-row');
+    const btnRow = document.querySelector('.button-row');
+    imgRow.querySelectorAll('img').forEach(img => {
+      img.addEventListener('click', e => {
+        e.preventDefault();
+        imgRow.classList.add('pressed');
+        btnRow.classList.add('pressed');
+        img.classList.add('pressed-target');
+        document.body.classList.add('slide-out');
+        setTimeout(() => {
+          const src = img.getAttribute('src');
+          location.href = src.includes('user_search.png')
+            ? 'guest-search.html'
+            : 'guest_sheet.html';
+        }, 500);
+      });
+      img.addEventListener('contextmenu', e => e.preventDefault());
+    });
+
+    // 채널톡 설치 스크립트
+    (function() {
+      var w = window;
+      if (w.ChannelIO) return (console.error||console.log)('ChannelIO snippet included twice.');
+      var ch = function(){ ch.c(arguments); };
+      ch.q = []; ch.c = function(args){ ch.q.push(args); };
+      w.ChannelIO = ch;
+      function l(){
+        if (w.ChannelIOInitialized) return;
+        w.ChannelIOInitialized = true;
+        var s = document.createElement('script');
+        s.type = 'text/javascript'; s.async = true;
+        s.src = 'https://cdn.channel.io/plugin/ch-plugin-web.js';
+        var x = document.getElementsByTagName('script')[0];
+        x.parentNode.insertBefore(s, x);
+      }
+      if (document.readyState === 'complete') l();
+      else window.addEventListener('DOMContentLoaded', l);
+    })();
+    ChannelIO('boot', { pluginKey: '428b343a-213b-4221-b859-0adc381ca394' });
+  </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+:root {
+    --default-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      Ubuntu, "Helvetica Neue", Helvetica, Arial, "PingFang SC",
+      "Hiragino Sans GB", "Microsoft Yahei UI", "Microsoft Yahei",
+      "Source Han Sans CN", sans-serif;
+  }
+  
+  .main-container {
+    overflow: hidden;
+  }
+  
+  .main-container,
+  .main-container * {
+    box-sizing: border-box;
+  }
+  
+  input,
+  select,
+  textarea,
+  button {
+    outline: 0;
+  }
+  /* 배경 blur 처리를 위한 스타일 */
+  body.modal-open #app-container {
+    filter: blur(4px);
+  }
+  /* 모달 오버레이 */
+  #modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  /* 모달 박스 */
+  #modal-box {
+    width: 354px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding-bottom: 20px;
+    font-family: Pretendard, sans-serif;
+  }
+  #modal-box .icon {
+    width: 50px; height: 50px;
+    background-image: url('/img/m1OVv3gWOU.png');
+    background-size: cover;
+    margin: 40px auto 16px;
+  }
+  #modal-box .message {
+    width: 294px;
+    margin: 0 auto;
+    text-align: center;
+    font-weight: 600;
+    line-height: 24px;
+    font-size: 16px;
+    color: #333333;
+  }
+  #modal-box .message .highlight {
+    color: #dfa13d;
+  }
+  #modal-box .subtext {
+    width: 294px;
+    margin: 8px auto 16px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 22px;
+    color: #8b8b8b;
+  }
+  #modal-box .checkbox-container {
+    display: flex;
+    align-items: center;
+    margin: 0 auto 24px;
+    width: 314px;
+    height: 58px;
+    border-radius: 12px;
+    background: #f5f5f5;
+  }
+  #modal-box .checkbox-container input[type="checkbox"] {
+    margin-left: 20px;
+    margin-right: 12px;
+    width: 18px; height: 18px;
+  }
+  #modal-box .checkbox-container label {
+    font-size: 18px;
+    color: #8b8b8b;
+  }
+  #modal-box .btn-next {
+    width: 354px;
+    height: 66px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 텍스트 중앙 정렬 */
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    background: #a3a3a3;
+    cursor: not-allowed;
+    user-select: none;
+  }
+  #modal-box .btn-next.enabled {
+    background: #dfa13d;
+    cursor: pointer;
+  }
